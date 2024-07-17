@@ -33,7 +33,8 @@ def upload_csv(request):
 
 
 def test(request):
-    return HttpResponse("test")
+    str = "hello,test."
+    return HttpResponse(str)
 
 
 def run_explain(request):
