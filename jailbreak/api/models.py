@@ -9,5 +9,10 @@ class Question(models.Model):
     behavior = models.CharField(max_length=255)
     category = models.CharField(max_length=255)
 
-    def __str__(self):
-        return self.goal
+
+class Set(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    relation = models.ManyToManyField(Question)
+
+
+
