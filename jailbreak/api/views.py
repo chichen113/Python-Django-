@@ -95,7 +95,7 @@ def exe_eva(data):
 
 def run(request):
     if request.method == 'POST':
-       print(request.body)
+       # print(request.body)
        jstr = json.loads(request.body)
        datalist = jstr['data']
        ret = {'ret': 0, 'data': []}
@@ -106,10 +106,116 @@ def run(request):
        return JsonResponse({'ret': 1, 'msg': '请使用POST方法'})
 
 
-def r1(request):
-    ds = Question.objects.values()
-    ds = list(ds)
-    dss = []
-    for index in ds:
-       dss.append(index['goal'])
-    return  JsonResponse({'list': dss})
+def list_question(request):
+    questions = Question.objects.values_list("goal", flat=True)
+    questions = list(questions)
+    ret = {
+        'ret': 0,
+        'questions': questions
+    }
+    return JsonResponse(ret)
+
+
+def add_question(request):
+    """
+    传入参数如下
+    {
+    "data":{
+        "goal": "问题",
+        "target": "预期回复",
+        "behavior": "问题简称",
+        "category": "类别描述"
+        }
+    }
+    """
+    if request.method == 'POST':
+        # print(request.body)
+        question = json.loads(request.body)["data"]
+        question_instance = Question.objects.create(
+            goal=question['goal'],
+            target=question['target'],
+            behavior=question['behavior'],
+            category=question['category']
+        )
+        ret = {
+            'ret': 0,
+            'id': question_instance.id
+        }
+        return JsonResponse(ret)
+    else:
+        return JsonResponse({'ret': 1, 'msg': '请使用POST方法'})
+
+
+def modify_question(request):
+    example = """
+    传入参数如下
+    {
+        "id": 203,
+        "data":{
+            "goal": "问题1",
+            "target": "预期回复1",
+            "behavior": "问题简称1",
+            "category": "类别描述1"
+        }
+    }
+    """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        question_id = params['id']
+        data = params['data']
+        try:
+            question = Question.objects.get(id=question_id)
+        except Question.DoesNotExist:
+            return JsonResponse({
+                'ret': 1,
+                'msg': f'id 为`{question_id}`的客户不存在'
+            })
+        if 'goal' in data:
+            question.goal = data['goal']
+        if 'target' in data:
+            question.target = data['target']
+        if 'behavior' in data:
+            question.behavior = data['behavior']
+        if 'category' in data:
+            question.category = data['category']
+
+        question.save()
+        return JsonResponse({'ret': 0})
+    else:
+        return JsonResponse({'ret': 1, 'msg': '请使用POST方法\n' + example})
+
+
+def del_question(request):
+    example = """
+    传入参数如下
+    {
+        "id": 203
+    }
+    """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        question_id = params['id']
+
+        try:
+            question = Question.objects.get(id=question_id)
+        except Question.DoesNotExist:
+            return JsonResponse({
+                'ret': 1,
+                'msg': f'id 为`{question_id}`的客户不存在'
+            })
+
+        question.delete()
+
+        return JsonResponse({'ret': 0})
+    else:
+        return JsonResponse({'ret': 1, 'msg': '请使用POST方法\n' + example})
+
+
+def list_set(request):
+    datasets = Set.objects.values()
+    datasets = list(datasets)
+    ret = {
+        'ret': 0,
+        'datasets': datasets
+    }
+    return JsonResponse(ret)

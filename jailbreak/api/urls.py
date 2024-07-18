@@ -8,5 +8,9 @@ urlpatterns = [
     path('run', views.run),
     path('run-explain', views.run_explain),
     path('upload-csv', upload_csv, name='upload_csv'),
-    path('r1', views.r1),
+    path('list-question', views.list_question),
+    path('add-question', views.add_question),
+    path('modify-question', views.modify_question),
+    path('del-question', views.del_question),
+    path('list-set', views.list_set),
 ]
