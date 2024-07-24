@@ -1,4 +1,5 @@
 # csv_app/models.py
+import datetime
 
 from django.db import models
 
@@ -8,6 +9,7 @@ class Question(models.Model):
     target = models.CharField(max_length=255)
     behavior = models.CharField(max_length=255)
     category = models.CharField(max_length=255)
+    methods = models.CharField(max_length=50, default='无增强')
 
 
 class Set(models.Model):
@@ -15,4 +17,22 @@ class Set(models.Model):
     relation = models.ManyToManyField(Question)
 
 
+class Task(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    state = models.CharField(max_length=50, default='starting')
+    escape_rate = models.CharField(max_length=50)
 
+
+class Test(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    collection = models.ForeignKey(Set, on_delete=models.CASCADE)
+    model = models.CharField(max_length=50)
+    evaluator = models.CharField(max_length=50)
+    task_id = models.ForeignKey(Task, on_delete=models.CASCADE)
+
+
+class Suite(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    time = models.DateTimeField(default=datetime.datetime.now)
+    state = models.CharField(max_length=50)
+    test_id = models.ForeignKey(Test, on_delete=models.CASCADE)
