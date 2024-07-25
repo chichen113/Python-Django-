@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import CSVUploadForm
 from .models import Question
-from .models import Set, Suite
+from .models import Set, Suite, Task,Test
 import pandas as pd
 from .masterkey_zeroshot import  MasterKey
 
@@ -301,12 +301,72 @@ def task_res(request):
 
 
 def test_suite_dele(request):
-    pass
+    example = """
+        传入参数如下
+        {
+            "Suite_name" : "testSuiteDelete"
+        }
+        """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        suite_name = params['Suite_name']
+
+        # print(request.body)
+        suite_instance = Suite.objects.get(
+            name=suite_name
+        )
+        suite_instance.delete()
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
 
 
 def test_dele(request):
-    pass
+    example = """
+            传入参数如下
+            {
+                "Test_name" : "testDelete"
+            }
+            """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        test_name = params['Test_name']
+
+        # print(request.body)
+        test_instance = Test.objects.get(
+            name=test_name
+        )
+        test_instance.delete()
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
 
 
 def task_dele(request):
-    pass
+    example = """
+            传入参数如下
+            {
+                "Task_name" : "taskDelete"
+            }
+            """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        task_name = params['Task_name']
+
+        # print(request.body)
+        task_instance = Task.objects.get(
+            name=task_name
+        )
+        task_instance.delete()
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
