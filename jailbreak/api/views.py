@@ -401,7 +401,33 @@ def task_create(request):
 
 
 def task_show(request):
-    pass
+    example = """
+    传入参数如下
+    {
+        "Suite_name" : "testSuite"
+    }
+    """
+    if request.method == 'GET':
+        # print(request.body)
+        params = request.GET
+        suite_name = params["Suite_name"]
+        test_list = Test.objects.filter(suite__name=suite_name)
+        data = []
+        for test in test_list:
+            task_list = Task.objects.filter(test=test)
+            for task in task_list:
+                mid = dict()
+                mid["name"] = task.name
+                mid["state"] = task.state
+                data.append(mid)
+
+        ret = { "Task_list": data }
+        return JsonResponse(ret)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
 
 
 def task_info(request):
