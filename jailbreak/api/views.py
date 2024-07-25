@@ -442,7 +442,30 @@ def task_show(request):
 
 
 def task_info(request):
-    pass
+    example = """
+    传入参数如下
+    {
+        "Task_name" : "task"
+    }
+    """
+    if request.method == 'GET':
+        # print(request.body)
+        params = request.GET
+        task_name = params["Task_name"]
+        task = Task.objects.get(name=task_name)
+        data = []
+        mid = dict()
+        mid["state"] = task.state
+        mid["escapeRate"] = task.escape_rate
+        data.append(mid)
+
+        ret = {"Task_Info": data}
+        return JsonResponse(ret)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
 
 
 def exe(task, test):
