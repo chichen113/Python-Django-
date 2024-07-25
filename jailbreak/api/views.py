@@ -8,6 +8,7 @@ from .models import Question
 from .models import Set, Suite, Test, Task
 import pandas as pd
 from .masterkey_zeroshot import  MasterKey
+import threading
 
 
 models = ["gpt-3.5-turbo"]
@@ -80,20 +81,30 @@ def exe_eva(data):
     # Initialize the MasterKey with the OpenAI API key and model names
     master_key = MasterKey("sk-6ztYKBLUnRd1kViyBelVC5CRrrDwAwzx4AfHdBMozqeD4N5F", execute_model=data["model"],
                            evaluation_model=data["evaluate_model"])
-    ret = []
-    for problem in get_dataset(data['dataset']):
-        malicious_instruction = problem
-        mid = {'problem': malicious_instruction}
+    collection = Set.objects.get(name=data["dataset"])
+    related_questions = collection.relation.values()
+    res_list = []
+    for qs in related_questions:
+        mid = dict()
+        mid["id"] = qs["id"]
+        mid["goal"] = qs["goal"]
+        mid["category"] = qs["category"]
+        mid["methods"] = qs["methods"]
+        res_list.append(mid)
+    count = 0
+    for index in range(len(res_list)):
+        malicious_instruction = res_list[index]["goal"]
         # Execute the jailbreak prompt with the malicious behavior
         jailbreak_executed = master_key.execute_jailbreak_prompt(malicious_instruction)
-        mid['exe'] = jailbreak_executed
+        res_list[index]["output"] = jailbreak_executed
         # print(f"Jailbreak executed: {jailbreak_executed}")
         # Evaluate the jailbreak prompt
         jailbreak_successful = master_key.evaluate_jailbreak_prompt(malicious_instruction, jailbreak_executed)
-        mid['success'] = jailbreak_successful
+        res_list[index]["is_success"] = jailbreak_successful
+        if jailbreak_successful:
+            count = count + 1
         # print(f"Jailbreak successful: {jailbreak_successful}")
-        ret.append(mid)
-    return ret
+    return res_list, count
 
 
 def run(request):
@@ -434,8 +445,61 @@ def task_info(request):
     pass
 
 
+def exe(task, test):
+    task.state = "running"
+    data = {
+        'dataset': test.collection.name,
+        'model': test.model,
+        'evaluate_model': test.model
+    }
+    res_list, count = exe_eva(data)
+    print("done!")
+    ret = {"data": res_list}
+    ret_str = json.dumps(ret)
+    file_path = f"{task.name}_{test.name}_{test.suite.name}.json"
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(ret_str)
+    rate = count / len(res_list)
+    task.escape_rate = f"{rate:.2%}"
+    # class Test(models.Model):
+    #     name = models.CharField(max_length=50, unique=True)
+    #     collection = models.ForeignKey(Set, on_delete=models.CASCADE)
+    #     model = models.CharField(max_length=50)
+    #     evaluator = models.CharField(max_length=50)
+    #     suite = models.ForeignKey(Suite, on_delete=models.CASCADE, null=True)
+    task.state = "done"
+    task.save()
+    return
+
+
 def task_exec(request):
-    pass
+    example = """
+    传入参数如下
+    {
+        "Task_name" : "Task1"
+    }
+    """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        task_name = params['Task_name']
+        # print(request.body)
+        task_instance = Task.objects.get(name=task_name)
+        if task_instance.state != "starting":
+            response = HttpResponse()
+            response.status_code = 404
+            response.content = "当前任务已运行"
+            return response
+        test_instance = task_instance.test
+        x = threading.Thread(target=exe, args=(task_instance, test_instance))
+        print("Main    : before running thread")
+        x.start()
+        print("Main    : running thread")
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
 
 
 def task_res(request):
