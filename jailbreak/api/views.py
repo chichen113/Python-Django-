@@ -366,7 +366,38 @@ def config(request):
 
 
 def task_create(request):
-    pass
+    example = """
+           传入参数如下
+           {
+               "Suite_name" : "testSuite",
+               "Test_name" : "text",
+               "Task_name" : "task"
+           }
+           """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        suite_name = params['Suite_name']
+        test_name = params['Test_name']
+        task_name = params['Task_name']
+        # print(request.body)
+        final = 1
+        test_name_instance_list = Test.objects.filter(name=test_name)
+        for ins in test_name_instance_list:
+            if ins.suite.name == suite_name:
+                final = ins
+                break
+        # 提取对应的 test id 值
+        task_instance = Task.objects.create(
+            name=task_name,
+            escape_rate=0,
+            test=final,
+        )
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
 
 
 def task_show(request):
