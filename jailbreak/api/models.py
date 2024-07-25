@@ -17,10 +17,10 @@ class Set(models.Model):
     relation = models.ManyToManyField(Question)
 
 
-class Task(models.Model):
+class Suite(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    state = models.CharField(max_length=50, default='starting')
-    escape_rate = models.CharField(max_length=50)
+    time = models.DateTimeField(default=datetime.datetime.now)
+    state = models.CharField(max_length=50)
 
 
 class Test(models.Model):
@@ -28,11 +28,11 @@ class Test(models.Model):
     collection = models.ForeignKey(Set, on_delete=models.CASCADE)
     model = models.CharField(max_length=50)
     evaluator = models.CharField(max_length=50)
-    task_id = models.ForeignKey(Task, on_delete=models.CASCADE)
+    suite_id = models.ForeignKey(Suite, on_delete=models.CASCADE, null=True)
 
 
-class Suite(models.Model):
+class Task(models.Model):
     name = models.CharField(max_length=50, unique=True)
-    time = models.DateTimeField(default=datetime.datetime.now)
-    state = models.CharField(max_length=50)
-    test_id = models.ForeignKey(Test, on_delete=models.CASCADE)
+    state = models.CharField(max_length=50, default='starting')
+    escape_rate = models.CharField(max_length=50)
+    test_id = models.ForeignKey(Test, on_delete=models.CASCADE, null=True)

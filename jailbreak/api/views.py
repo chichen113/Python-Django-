@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import CSVUploadForm
 from .models import Question
-from .models import Set
+from .models import Set, Suite
 import pandas as pd
 from .masterkey_zeroshot import  MasterKey
 
@@ -219,3 +219,94 @@ def list_set(request):
         'datasets': datasets
     }
     return JsonResponse(ret)
+
+
+def test_suit_create(request):
+    example = """
+    传入参数如下
+    {
+        "Suite_name" : "testSuite"
+    }
+    """
+    # todo: 添加名称重复时处理
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        suite_name = params['Suite_name']
+
+        # print(request.body)
+        suite_instance = Suite.objects.create(
+            name=suite_name,
+            state="running"
+        )
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
+
+
+def test_suit_show(request):
+    example = """
+    传入参数如下
+    {
+        "Suite_name" : "TestSuiteShow"
+    }
+    """
+    if request.method == 'GET':
+        # print(request.body)
+        test_suit_list = list(Suite.objects.values())
+        # print(test_suit_list)
+        for item in test_suit_list:
+            del item["id"]
+        ret = { "data": test_suit_list }
+        return JsonResponse(ret)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
+
+
+def test_create(request):
+    pass
+
+
+def test_show(request):
+    pass
+
+
+def config(request):
+    pass
+
+
+def task_create(request):
+    pass
+
+
+def task_show(request):
+    pass
+
+
+def task_info(request):
+    pass
+
+
+def task_exec(request):
+    pass
+
+
+def task_res(request):
+    pass
+
+
+def test_suite_dele(request):
+    pass
+
+
+def test_dele(request):
+    pass
+
+
+def task_dele(request):
+    pass
