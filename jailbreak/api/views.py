@@ -401,7 +401,35 @@ def task_create(request):
 
 
 def task_show(request):
-    pass
+    example = """
+        传入参数如下
+        {
+            "Suite_name" : "testSuite"
+        }
+        """
+    if request.method == 'GET':
+        # print(request.body)
+        params = request.GET
+        suite_name = params["Suite_name"]
+        test_list = Test.objects.filter(suite__name=suite_name)
+        data = []
+        for test in test_list:
+            mid = dict()
+            mid["name"] = test.name
+            task_list = Task.objects.filter(test__name=mid["name"])
+            for task in task_list:
+                mid2 =dict()
+                mid2["name"] = task.name
+                mid2["state"] = task.state
+                data.append(mid2)
+
+        ret = {"Task_list": data}
+        return JsonResponse(ret)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
 
 
 def task_info(request):
@@ -413,7 +441,34 @@ def task_exec(request):
 
 
 def task_res(request):
-    pass
+    example = """
+            传入参数如下
+            {
+                "Task_name" : "task1"
+            }
+            """
+    if request.method == 'GET':
+        params = request.GET
+        task_name = params["Task_name"]
+        task = Task.objects.get(name=task_name)
+        test_name = task.test.name
+        suite_name = task.test.suite.name
+        filename = task_name+'_'+test_name+'_'+suite_name+'.json'
+        file_path = f"{filename}"
+        content = ' '
+        with open(file_path, 'r') as file:
+            content =file.read()
+        content = json.loads(content)
+        return JsonResponse(content)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
+
+
+
+
 
 
 def test_suite_dele(request):

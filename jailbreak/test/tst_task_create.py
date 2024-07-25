@@ -5,7 +5,7 @@ payload = """
     {
         "Suite_name" : "testSuite",
         "Test_name" : "Test1",
-        "Task_name" : "task1"
+        "Task_name" : "task2"
     }
     """
 #payload = json.dumps(payload)
