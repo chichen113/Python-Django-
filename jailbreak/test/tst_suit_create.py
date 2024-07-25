@@ -3,7 +3,7 @@ import json
 
 payload = """
     {
-        "Suite_name" : "testSuite2"
+        "Suite_name" : "testSuite"
     }
     """
 # payload = json.dumps(payload)

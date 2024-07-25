@@ -290,16 +290,16 @@ def test_create(request):
         collection = params['Collection']
         model = params['Model']
         evaluator = params['Evaluator']
-        suite_id = Suite.objects.get(name=suite_name).id
-        collection_id = Set.objects.get(name=collection).id
+        suite_instance = Suite.objects.get(name=suite_name)
+        collection_instance = Set.objects.get(name=collection)
 
         # print(request.body)
         test_instance = Test.objects.create(
             name=test_name,
-            collection=collection_id,
+            collection=collection_instance,
             model=model,
             evaluator=evaluator,
-            state="running"
+            suite=suite_instance
         )
         return HttpResponse()
     else:
