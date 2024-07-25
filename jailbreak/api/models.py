@@ -28,11 +28,11 @@ class Test(models.Model):
     collection = models.ForeignKey(Set, on_delete=models.CASCADE)
     model = models.CharField(max_length=50)
     evaluator = models.CharField(max_length=50)
-    suite_id = models.ForeignKey(Suite, on_delete=models.CASCADE, null=True)
+    suite = models.ForeignKey(Suite, on_delete=models.CASCADE, null=True)
 
 
 class Task(models.Model):
     name = models.CharField(max_length=50, unique=True)
     state = models.CharField(max_length=50, default='starting')
     escape_rate = models.CharField(max_length=50)
-    test_id = models.ForeignKey(Test, on_delete=models.CASCADE, null=True)
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, null=True)

@@ -5,9 +5,13 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import CSVUploadForm
 from .models import Question
-from .models import Set, Suite
+from .models import Set, Suite, Test, Task
 import pandas as pd
 from .masterkey_zeroshot import  MasterKey
+
+
+models = ["gpt-3.5-turbo"]
+evaluators = ["gpt-3.5-turbo"]
 
 
 def upload_csv(request):
@@ -269,7 +273,40 @@ def test_suit_show(request):
 
 
 def test_create(request):
-    pass
+    example = """
+    传入参数如下
+    {
+        "Suite_name" : "testSuite",
+        "Test_name" : "Test1",
+        "Collection" : "question1.csv",
+        "Model" : "gpt-3.5-turbo",
+        "Evaluator" : "gpt-3.5-turbo"
+    }
+    """
+    if request.method == 'POST':
+        params = json.loads(request.body)
+        suite_name = params['Suite_name']
+        test_name = params['Test_name']
+        collection = params['Collection']
+        model = params['Model']
+        evaluator = params['Evaluator']
+        suite_id = Suite.objects.get(name=suite_name).id
+        collection_id = Set.objects.get(name=collection).id
+
+        # print(request.body)
+        test_instance = Test.objects.create(
+            name=test_name,
+            collection=collection_id,
+            model=model,
+            evaluator=evaluator,
+            state="running"
+        )
+        return HttpResponse()
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用post方法"
+        return response
 
 
 def test_show(request):
@@ -277,7 +314,28 @@ def test_show(request):
 
 
 def config(request):
-    pass
+    example = """
+    传入参数如下
+    {
+        "Suite_name" : "TestSuite"
+    }
+    """
+    if request.method == 'GET':
+        # print(request.body)
+        collection = list(Set.objects.values_list("name", flat=True))
+        ret = {
+            "Config": {
+                "collection": collection,
+                "model": models,
+                "evaluator": evaluators
+            }
+        }
+        return JsonResponse(ret)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
 
 
 def task_create(request):
