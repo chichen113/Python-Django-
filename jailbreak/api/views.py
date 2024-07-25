@@ -66,6 +66,7 @@ def run_explain(request):
     }
     return JsonResponse(ret)
 
+
 def get_dataset(dataset_name):
     ds = Question.objects.values()
     ds = list(ds)
@@ -73,8 +74,6 @@ def get_dataset(dataset_name):
     for index in ds:
         dss.append(index['goal'])
     return dss
-
-
 
 
 def exe_eva(data):
@@ -263,7 +262,9 @@ def test_suit_show(request):
         # print(test_suit_list)
         for item in test_suit_list:
             del item["id"]
-        ret = { "data": test_suit_list }
+        ret = {
+            "Suite_list": test_suit_list
+        }
         return JsonResponse(ret)
     else:
         response = HttpResponse()
@@ -310,7 +311,33 @@ def test_create(request):
 
 
 def test_show(request):
-    pass
+    example = """
+    传入参数如下
+    {
+        "Suite_name" : "testSuite"
+    }
+    """
+    if request.method == 'GET':
+        # print(request.body)
+        params = request.GET
+        suite_name = params["Suite_name"]
+        test_list = Test.objects.filter(suite__name=suite_name)
+        data = []
+        for test in test_list:
+            mid = dict()
+            mid["name"] = test.name
+            mid["collection"] = test.collection.name
+            mid["model"] = test.model
+            mid["evaluator"] = test.evaluator
+            data.append(mid)
+
+        ret = { "Test_list": data }
+        return JsonResponse(ret)
+    else:
+        response = HttpResponse()
+        response.status_code = 404
+        response.content = "请使用get方法"
+        return response
 
 
 def config(request):
