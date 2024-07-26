@@ -3,9 +3,9 @@ import json
 
 payload = """
     {
-        "Suite_name" : "testSuite2",
-        "Test_name" : "Test3",
-        "Collection" : "question1.csv",
+        "Suite_name" : "testSuite3",
+        "Test_name" : "Test6",
+        "Collection" : "question3.csv",
         "Model" : "gpt-3.5-turbo",
         "Evaluator" : "gpt-3.5-turbo"
     }

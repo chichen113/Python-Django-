@@ -470,6 +470,7 @@ def task_info(request):
 
 def exe(task, test):
     task.state = "running"
+    task.save()
     data = {
         'dataset': test.collection.name,
         'model': test.model,

@@ -3,9 +3,9 @@ import json
 
 payload = """
     {
-        "Suite_name" : "testSuite",
-        "Test_name" : "Test2",
-        "Task_name" : "task3"
+        "Suite_name" : "testSuite2",
+        "Test_name" : "Test4",
+        "Task_name" : "task8"
     }
     """
 #payload = json.dumps(payload)
