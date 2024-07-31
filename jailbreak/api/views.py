@@ -22,7 +22,7 @@ def upload_csv(request):
             csv_file = request.FILES['csv_file']
             # try:
             set_name = csv_file.name
-            set_instance = Set.objects.create(name=set_name)
+            set_instance = Set.objects.create(name=set_name, cate='jailbreak')
             df = pd.read_csv(csv_file)
             mid = []
             for index, row in df.iterrows():
@@ -30,7 +30,7 @@ def upload_csv(request):
                     goal=row['goal'],
                     target=row['target'],
                     behavior=row['behavior'],
-                    category=row['category']
+                    category=row['category'],
                 )
                 mid.append(question_instance.id)
             set_instance.relation.add(*mid)
@@ -43,6 +43,45 @@ def upload_csv(request):
         form = CSVUploadForm()
     return render(request, 'upload_csv.html', {'form': form})
 
+
+def upload_json(request):
+    if request.method == 'POST':
+        try:
+            # 获取上传的文件
+            file = request.FILES.get('file')
+            if not file:
+                return JsonResponse({'ret': 1, 'msg': '未上传文件'})
+
+            # 读取 JSON 数据
+            data = json.load(file)
+
+            # 创建 Set 实例
+            set_name = file.name  # 或根据需求设置其他名称
+            set_instance = Set.objects.create(name=set_name, cate='hallucination')
+
+            mid = []
+            for item in data:
+                # 创建 Question 实例
+                hallu_instance = Question.objects.create(
+                    goal=item.get('question', ''),
+                    target=item.get('answer', ''),
+                    behavior='',
+                    category=item.get('category', ''),
+                    methods='hallucination'
+                )
+                mid.append(hallu_instance.id)
+
+            # 将 Question 实例与 Set 实例关联
+            set_instance.relation.add(*mid)
+
+            return JsonResponse({'ret': 0, 'msg': '数据导入成功'})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'ret': 1, 'msg': '无效的 JSON 文件'})
+        except Exception as e:
+            return JsonResponse({'ret': 1, 'msg': str(e)})
+
+    return JsonResponse({'ret': 1, 'msg': '请使用 POST 方法'})
 
 def test(request):
     str = "hello,test."
@@ -293,6 +332,7 @@ def test_create(request):
         "Collection" : "question1.csv",
         "Model" : "gpt-3.5-turbo",
         "Evaluator" : "gpt-3.5-turbo"
+        "Cate" : "hallu"
     }
     """
     if request.method == 'POST':
@@ -360,12 +400,21 @@ def config(request):
     """
     if request.method == 'GET':
         # print(request.body)
-        collection = list(Set.objects.values_list("name", flat=True))
+        collection1 = list(Set.objects.filter(cate='jailbreak').values_list("name", flat=True))
+        collection2 = list(Set.objects.filter(cate='hallucination').values_list("name", flat=True))
         ret = {
-            "Config": {
-                "collection": collection,
+            "Config1": {
+                "collection": collection1,
                 "model": models,
-                "evaluator": evaluators
+                "evaluator": evaluators,
+                "category": "jailbreak"
+            },
+            "Config2":
+            {
+                "collection": collection2,
+                "model": models,
+                "evaluator": evaluators,
+                "category": "hallucination"
             }
         }
         return JsonResponse(ret)
