@@ -4,11 +4,13 @@ import json
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import CSVUploadForm
-from .models import Question
-from .models import Set, Suite, Test, Task
+from .models import Set, Suite, Test, Task, Question
 import pandas as pd
 from .masterkey_zeroshot import  MasterKey
 import threading
+from .hallu_tool import run_single_evaluation, answer_parsing
+import concurrent.futures
+
 
 
 models = ["gpt-3.5-turbo"]
@@ -30,7 +32,7 @@ def upload_csv(request):
                     goal=row['goal'],
                     target=row['target'],
                     behavior=row['behavior'],
-                    category=row['category'],
+                    category=row['category']
                 )
                 mid.append(question_instance.id)
             set_instance.relation.add(*mid)
@@ -114,36 +116,6 @@ def get_dataset(dataset_name):
     for index in ds:
         dss.append(index['goal'])
     return dss
-
-
-def exe_eva(data):
-    # Initialize the MasterKey with the OpenAI API key and model names
-    master_key = MasterKey("sk-6ztYKBLUnRd1kViyBelVC5CRrrDwAwzx4AfHdBMozqeD4N5F", execute_model=data["model"],
-                           evaluation_model=data["evaluate_model"])
-    collection = Set.objects.get(name=data["dataset"])
-    related_questions = collection.relation.values()
-    res_list = []
-    for qs in related_questions:
-        mid = dict()
-        mid["id"] = qs["id"]
-        mid["goal"] = qs["goal"]
-        mid["category"] = qs["category"]
-        mid["methods"] = qs["methods"]
-        res_list.append(mid)
-    count = 0
-    for index in range(len(res_list)):
-        malicious_instruction = res_list[index]["goal"]
-        # Execute the jailbreak prompt with the malicious behavior
-        jailbreak_executed = master_key.execute_jailbreak_prompt(malicious_instruction)
-        res_list[index]["output"] = jailbreak_executed
-        # print(f"Jailbreak executed: {jailbreak_executed}")
-        # Evaluate the jailbreak prompt
-        jailbreak_successful = master_key.evaluate_jailbreak_prompt(malicious_instruction, jailbreak_executed)
-        res_list[index]["is_success"] = jailbreak_successful
-        if jailbreak_successful:
-            count = count + 1
-        # print(f"Jailbreak successful: {jailbreak_successful}")
-    return res_list, count
 
 
 def run(request):
@@ -517,7 +489,37 @@ def task_info(request):
         return response
 
 
-def exe(task, test):
+def exe_eva(data):
+    # Initialize the MasterKey with the OpenAI API key and model names
+    master_key = MasterKey("sk-6ztYKBLUnRd1kViyBelVC5CRrrDwAwzx4AfHdBMozqeD4N5F", execute_model=data["model"],
+                           evaluation_model=data["evaluate_model"])
+    collection = Set.objects.get(name=data["dataset"])
+    related_questions = collection.relation.values()
+    res_list = []
+    for qs in related_questions:
+        mid = dict()
+        mid["id"] = qs["id"]
+        mid["goal"] = qs["goal"]
+        mid["category"] = qs["category"]
+        mid["methods"] = qs["methods"]
+        res_list.append(mid)
+    count = 0
+    for index in range(len(res_list)):
+        malicious_instruction = res_list[index]["goal"]
+        # Execute the jailbreak prompt with the malicious behavior
+        jailbreak_executed = master_key.execute_jailbreak_prompt(malicious_instruction)
+        res_list[index]["output"] = jailbreak_executed
+        # print(f"Jailbreak executed: {jailbreak_executed}")
+        # Evaluate the jailbreak prompt
+        jailbreak_successful = master_key.evaluate_jailbreak_prompt(malicious_instruction, jailbreak_executed)
+        res_list[index]["is_success"] = jailbreak_successful
+        if jailbreak_successful:
+            count = count + 1
+        # print(f"Jailbreak successful: {jailbreak_successful}")
+    return res_list, count
+
+
+def jailbreak_exe(task, test):
     task.state = "running"
     task.save()
     data = {
@@ -526,7 +528,7 @@ def exe(task, test):
         'evaluate_model': test.model
     }
     res_list, count = exe_eva(data)
-    print("done!")
+    print(f"{task.name}_{test.name}_{test.suite.name} done!")
     ret = {"data": res_list}
     ret_str = json.dumps(ret)
     file_path = f"{task.name}_{test.name}_{test.suite.name}.json"
@@ -534,12 +536,45 @@ def exe(task, test):
         file.write(ret_str)
     rate = count / len(res_list)
     task.escape_rate = f"{rate:.2%}"
-    # class Test(models.Model):
-    #     name = models.CharField(max_length=50, unique=True)
-    #     collection = models.ForeignKey(Set, on_delete=models.CASCADE)
-    #     model = models.CharField(max_length=50)
-    #     evaluator = models.CharField(max_length=50)
-    #     suite = models.ForeignKey(Suite, on_delete=models.CASCADE, null=True)
+    task.state = "done"
+    task.save()
+    return
+
+
+def hallu_exe(task, test):
+    task.state = "running"
+    task.save()
+
+    collection = Set.objects.get(name=test.collection.name)
+    related_questions = collection.relation.values()
+    mid_list = []
+    for qs in related_questions:
+        mid = dict()
+        mid["id"] = qs["id"]
+        mid["goal"] = qs["goal"]
+        mid["category"] = qs["category"]
+        mid["target"] = qs["target"]
+        mid["methods"] = qs["methods"]
+        mid_list.append(mid)
+
+    output_data = []
+    model_name = test.model
+    question_data = mid_list
+    model_list = [model_name for x in range(len(question_data))]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        ret_list = executor.map(run_single_evaluation, question_data, model_list)
+    for item in ret_list:
+        output_data.append(item)
+    hallucination_count = answer_parsing(output_data)
+    print(f"{task.name}_{test.name}_{test.suite.name} done!")
+
+    ret = {"data": output_data}
+    ret_str = json.dumps(ret)
+    file_path = f"{task.name}_{test.name}_{test.suite.name}.json"
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(ret_str)
+    rate = hallucination_count / len(output_data)
+    task.escape_rate = f"{rate:.2%}"
     task.state = "done"
     task.save()
     return
@@ -563,10 +598,12 @@ def task_exec(request):
             response.content = "当前任务已运行"
             return response
         test_instance = task_instance.test
-        x = threading.Thread(target=exe, args=(task_instance, test_instance))
-        print("Main    : before running thread")
-        x.start()
-        print("Main    : running thread")
+        if test_instance.collection.cate == "jailbreak":
+            x = threading.Thread(target=jailbreak_exe, args=(task_instance, test_instance))
+            x.start()
+        else:
+            x = threading.Thread(target=hallu_exe, args=(task_instance, test_instance))
+            x.start()
         return HttpResponse()
     else:
         response = HttpResponse()
@@ -600,10 +637,6 @@ def task_res(request):
         response.status_code = 404
         response.content = "请使用get方法"
         return response
-
-
-
-
 
 
 def test_suite_dele(request):

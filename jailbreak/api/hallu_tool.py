@@ -78,6 +78,7 @@ def answer_parsing(data):
         else:
             hallucination_count += 1
             qa_pair['is_success'] = False
+        return hallucination_count
 
 
 
