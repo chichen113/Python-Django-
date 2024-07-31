@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from .views import upload_csv
+from .views import upload_json
 
 
 urlpatterns = [
@@ -8,6 +9,7 @@ urlpatterns = [
     path('run', views.run),
     path('run-explain', views.run_explain),
     path('upload-csv', upload_csv, name='upload_csv'),
+    path('upload-json', upload_json),
     path('list-question', views.list_question),
     path('add-question', views.add_question),
     path('modify-question', views.modify_question),
