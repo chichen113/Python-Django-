@@ -1,3 +1,6 @@
 # Python-Django-
 
 越狱攻击后端框架
+根据requirement下载对应的库函数，可通过前端发送数据进行函数的调用，也可以使用test文件夹下的部分测试功能进行测试
+
+使用的是python-django构建后端框架，数据库为轻量级数据库sqlite，框架构建在jailbreak中，主要函数在api中
